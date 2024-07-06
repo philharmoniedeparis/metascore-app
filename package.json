@@ -1,0 +1,29 @@
+{
+  "name": "metascore-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/app/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron ./src/app/main.js"
+  },
+  "build": {
+    "fileAssociations": [
+      {
+        "ext": "metascore",
+        "name": "metaScore",
+        "role": "Viewer"
+      }
+    ],
+    "nsis": {
+      "perMachine": true
+    }
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.14",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "electron": "^31.0.2"
+  }
+}
