@@ -27,13 +27,11 @@
  */
 
 
-import 'metascore-library/dist/metaScore.Player.css'
-import { Player } from 'metascore-library/dist/metaScore.Player.umd'
 
 import './index.css';
 
 window.electronAPI.onAppOpen(() => {
-  Player.create({
+  metaScore.Player.create({
     "el": "#app",
     "url": "app://data.json",
     "autoload": true,
