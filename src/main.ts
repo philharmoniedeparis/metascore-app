@@ -9,6 +9,7 @@ import {
 import path from 'path';
 import AdmZip from 'adm-zip';
 import mime from 'mime-types';
+import base64url from "base64url";
 
 let zip: AdmZip | null = null;
 
@@ -77,10 +78,9 @@ const createMenu = () => {
   Menu.setApplicationMenu(menu)
 }
 
-
 protocol.registerSchemesAsPrivileged([
   {
-    scheme: 'app',
+    scheme: 'zip',
     privileges: {
       secure: true,
       supportFetchAPI: true,
@@ -90,28 +90,33 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 app.whenReady().then(() => {
-  // Redirect metascore.philharmoniedeparis.fr requests to app://.
+  // Redirect external requests to zip://.
   session.defaultSession.webRequest.onBeforeRequest(
-    {
-      urls: ['*://metascore.philharmoniedeparis.fr/*']
-    },
+    { urls: ['http://*/*', 'https://*/*'] },
     (details, callback) => {
-      const { pathname } = new URL(details.url)
+      const url = details.url;
+      const { host } = new URL(url);
+      
+      if (host.startsWith('localhost')) {
+        callback({});
+        return;
+      }
+
+      const name = base64url.encode(url);
       callback({
-        redirectURL: `app://${pathname.slice(1)}`
-      });
+        redirectURL: `zip:///files/${name}`
+      })
     }
   );
 
-  // Handle app:// requests.
-  protocol.handle('app', (request) => {
-    const filePath = request.url.slice('app://'.length);
-    const entry = zip?.getEntry(filePath);
-    console.log(filePath, entry);
+  // Handle zip:// requests.
+  protocol.handle('zip', (request) => {
+    const url = request.url;
+    const { pathname } = new URL(url);
+    const filepath = pathname.replace(/^\//, '');
+    const entry = zip?.getEntry(filepath);
     if (entry) {
-      return new Response(entry.getData(), {
-        headers: { 'content-type': mime.lookup(entry.name) }
-      });
+      return new Response(entry.getData());
     } else {
       return new Response("Not found", {
         status: 404,
