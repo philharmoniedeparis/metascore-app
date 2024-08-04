@@ -5,10 +5,11 @@ import {
   Menu,
   protocol,
   session,
+  ipcMain,
 } from 'electron';
-import path from 'path';
+import { join, extname } from 'path';
+import { lstatSync } from 'fs';
 import AdmZip from 'adm-zip';
-import mime from 'mime-types';
 import base64url from "base64url";
 
 let zip: AdmZip | null = null;
@@ -24,20 +25,35 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: join(__dirname, 'preload.js'),
       sandbox: false,
     },
   });
 
   // and load the index.html of the app.
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
-  }
+  mainWindow.loadFile(join(__dirname, 'index.html'));
 
   return mainWindow;
 };
+
+const openApp = (path: string) => {
+  zip = new AdmZip(path);
+  BrowserWindow.getFocusedWindow().loadFile(join(__dirname, 'app.html'));
+}
+
+const showOpenDialog = async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile', 'dontAddToRecent'],
+      filters: [{ name: 'metaScore Files', extensions: ['metascore'] }]
+    });
+    if (result.canceled) return;
+
+    openApp(result.filePaths.at(0));
+  } catch (err) {
+    console.error(err)
+  }
+}
 
 const createMenu = () => {
   const menu = Menu.buildFromTemplate([
@@ -46,20 +62,7 @@ const createMenu = () => {
       submenu: [
         {
           label: 'Open',
-          click: async () => {
-            try {
-              const result = await dialog.showOpenDialog({
-                properties: ['openFile', 'dontAddToRecent '],
-                filters: [{ name: 'metaScore Files', extensions: ['metascore'] }]
-              });
-              if (result.canceled) return;
-
-              zip = new AdmZip(result.filePaths.at(0));
-              BrowserWindow.getFocusedWindow().webContents.send('app-open');
-            } catch (err) {
-              console.error(err)
-            }
-          },
+          click: showOpenDialog,
           accelerator: 'CmdOrCtrl+O'
         },
         { role: 'quit' }
@@ -125,9 +128,21 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('browseFile', (event) => {
+    showOpenDialog();
+  });
+
+  ipcMain.handle('dropFile', (event, path) => {
+    if (lstatSync(path).isFile() && extname(path) === ".metaScore") {
+      openApp(path);
+      return true;
+    }
+    return false;
+  });
+
   createMenu();
   createWindow();
-})
+});
 
 
 // Quit when all windows are closed, except on macOS. There, it's common
