@@ -100,7 +100,7 @@ app.whenReady().then(() => {
         return;
       }
 
-      const name = base64url.encode(url);
+      const name = base64url.encode(decodeURI(url));
       callback({
         redirectURL: `zip:///${name}`
       })
