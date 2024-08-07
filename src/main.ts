@@ -14,11 +14,6 @@ import base64url from "base64url";
 
 let zip: AdmZip | null = null;
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-/*if (require('electron-squirrel-startup')) {
-  app.quit();
-}*/
-
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -99,7 +94,7 @@ app.whenReady().then(() => {
     (details, callback) => {
       const url = details.url;
       const { host } = new URL(url);
-      
+
       if (host.startsWith('localhost')) {
         callback({});
         return;
@@ -107,7 +102,7 @@ app.whenReady().then(() => {
 
       const name = base64url.encode(url);
       callback({
-        redirectURL: `zip:///files/${name}`
+        redirectURL: `zip:///${name}`
       })
     }
   );
@@ -162,6 +157,3 @@ app.on('activate', () => {
   }
 });
 
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
