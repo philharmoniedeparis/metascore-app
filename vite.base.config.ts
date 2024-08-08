@@ -9,8 +9,7 @@ export const external = [...builtins, ...Object.keys('dependencies' in pkg ? (pk
 
 export function getBuildConfig(env: ConfigEnv<'build'>): UserConfig {
   const { root, mode, command } = env;
-
-  return {
+  const config: UserConfig = {
     root,
     mode,
     build: {
@@ -22,7 +21,13 @@ export function getBuildConfig(env: ConfigEnv<'build'>): UserConfig {
       minify: command === 'build',
     },
     clearScreen: false,
-  };
+  }
+
+  if (command !== 'serve') {
+    config.publicDir = false;
+  }
+
+  return config;
 }
 
 export function getDefineKeys(names: string[]) {

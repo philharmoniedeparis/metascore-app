@@ -16,6 +16,18 @@ const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://metascore.philharmoni
 
 let zip: AdmZip | null = null;
 
+const loadHTML = (file, win?: BrowserWindow | null) => {
+  win = win ?? BrowserWindow.getFocusedWindow();
+
+  if (!win) return;
+
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    win.loadURL(file === 'index.html' ? MAIN_WINDOW_VITE_DEV_SERVER_URL : join(__dirname, file));
+  } else {
+    win.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/${file}`));
+  }
+}
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -25,17 +37,18 @@ const createWindow = () => {
       preload: join(__dirname, 'preload.js'),
       sandbox: false,
     },
+    icon: join(__dirname, 'assets/icons/icon.png'),
   });
 
   // and load the index.html of the app.
-  mainWindow.loadFile(join(__dirname, 'index.html'));
+  loadHTML('index.html', mainWindow);
 
   return mainWindow;
 };
 
 const openApp = (path: string) => {
   zip = new AdmZip(path);
-  BrowserWindow.getFocusedWindow().loadFile(join(__dirname, 'app.html'));
+  loadHTML('app.html');
 }
 
 const showOpenDialog = async () => {
