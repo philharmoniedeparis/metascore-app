@@ -12,11 +12,14 @@ import { lstatSync } from 'fs';
 import AdmZip from 'adm-zip';
 import mime from 'mime/lite';
 
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
+declare const MAIN_WINDOW_VITE_NAME: string;
+
 const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://metascore.philharmoniedeparis.fr/";
 
 let zip: AdmZip | null = null;
 
-const loadHTML = (file, win?: BrowserWindow | null) => {
+const loadHTML = (file: string, win?: BrowserWindow | null) => {
   win = win ?? BrowserWindow.getFocusedWindow();
 
   if (!win) return;
@@ -59,9 +62,10 @@ const showOpenDialog = async () => {
     });
     if (result.canceled) return;
 
-    openApp(result.filePaths.at(0));
+    const filePath = result.filePaths.at(0);
+    if (filePath) openApp(filePath);
   } catch (err) {
-    console.error(err)
+    console.error(err);
   }
 }
 
