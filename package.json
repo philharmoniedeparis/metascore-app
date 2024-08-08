@@ -1,14 +1,15 @@
 {
   "name": "metascore-app",
-  "productName": "metaScore Offline App",
+  "productName": "metaScore - offline",
   "version": "1.0.0",
   "description": "My Electron application description",
+  "homepage": "https://metascore.philharmoniedeparis.fr/",
   "keywords": [],
   "author": {
     "name": "semiaddict",
     "email": "info@semiaddict.com"
   },
-  "license": "MIT",
+  "copyright": "Copyright © Cité de la musique - Philharmonie de Paris",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",

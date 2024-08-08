@@ -11,6 +11,7 @@ import { join, extname } from 'path';
 import { lstatSync } from 'fs';
 import AdmZip from 'adm-zip';
 import mime from 'mime/lite';
+import { productName, version, copyright, homepage } from '../package.json';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -89,6 +90,12 @@ const createMenu = () => {
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        { role: 'about', label: 'About', },
       ]
     },
   ])
@@ -190,3 +197,9 @@ app.on('activate', () => {
   }
 });
 
+app.setAboutPanelOptions({
+  applicationName: productName,
+  applicationVersion: `v.${version}`,
+  copyright,
+  website: homepage,
+});
