@@ -34,7 +34,7 @@ const loadHTML = (file: string, win?: BrowserWindow | null) => {
 
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  const browserWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -44,10 +44,23 @@ const createWindow = () => {
     icon: join(__dirname, 'assets/icons/icon.png'),
   });
 
-  // and load the index.html of the app.
-  loadHTML('index.html', mainWindow);
+  // Emitted when the window enters a full-screen state.
+  browserWindow.on('enter-full-screen', () => {
+    browserWindow.setMenuBarVisibility(false);
+    browserWindow.setAutoHideMenuBar(true);
+  });
 
-  return mainWindow;
+  // Emitted when the window leaves a full-screen state
+  browserWindow.on('leave-full-screen', () => {
+    browserWindow.setMenuBarVisibility(true);
+    browserWindow.setAutoHideMenuBar(false);
+  });
+
+
+  // and load the index.html of the app.
+  loadHTML('index.html', browserWindow);
+
+  return browserWindow;
 };
 
 const openApp = (path: string) => {
