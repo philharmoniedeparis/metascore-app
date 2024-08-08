@@ -10,7 +10,9 @@ import {
 import { join, extname } from 'path';
 import { lstatSync } from 'fs';
 import AdmZip from 'adm-zip';
-import base64url from "base64url";
+import mime from 'mime/lite';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://metascore.philharmoniedeparis.fr/";
 
 let zip: AdmZip | null = null;
 
@@ -93,16 +95,23 @@ app.whenReady().then(() => {
     { urls: ['http://*/*', 'https://*/*'] },
     (details, callback) => {
       const url = details.url;
-      const { host } = new URL(url);
+      const { host } = new URL(url, BASE_URL);
 
       if (host.startsWith('localhost')) {
         callback({});
         return;
       }
 
-      const name = base64url.encode(decodeURI(url));
+      let encoded = decodeURI(url);
+      // Base64URL encode.
+      encoded = btoa(encoded);
+      encoded = encoded.replace(/\+/g, '-').replace(/\//g, '_');
+      encoded = encoded.replace(/=+$/, '');
+
+      const ext = extname(url);
+
       callback({
-        redirectURL: `zip:///${name}`
+        redirectURL: `zip:///${encoded}?ext=${ext}`
       })
     }
   );
@@ -110,20 +119,27 @@ app.whenReady().then(() => {
   // Handle zip:// requests.
   protocol.handle('zip', (request) => {
     const url = request.url;
-    const { pathname } = new URL(url);
+    const { pathname, searchParams } = new URL(url);
     const filepath = pathname.replace(/^\//, '');
     const entry = zip?.getEntry(filepath);
+    const headers = new Headers();
+
     if (entry) {
-      return new Response(entry.getData());
+      const ext = searchParams.get('ext');
+      if (ext) headers.set('content-type', mime.getType(ext));
+      return new Response(entry.getData(), {
+        headers
+      });
     } else {
+      headers.set('content-type', 'text/html');
       return new Response("Not found", {
         status: 404,
-        headers: { 'content-type': 'text/html' }
+        headers,
       });
     }
   });
 
-  ipcMain.handle('browseFile', (event) => {
+  ipcMain.handle('browseFile', () => {
     showOpenDialog();
   });
 

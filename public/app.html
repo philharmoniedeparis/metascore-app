@@ -13,19 +13,6 @@
     <base href="https://metascore.philharmoniedeparis.fr/" />
   </head>
   <body>
-    <script>
-      if (window.electronAPI.baseUrl) {
-        // Update the base url.
-        const head = document.querySelector('head');
-        let base = head.querySelector('base');
-        if (!base) {
-          base = document.createElement('base');
-          head.appendChild(base);
-        }
-        base.href = window.electronAPI.baseUrl;
-      }
-    </script>
-
     <div id="app"></div>
   </body>
 </html>

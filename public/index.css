@@ -1,3 +1,7 @@
+:root {
+    --color-accent: #0000fe;
+}
+
 html,
 body {
     height: 100%;
@@ -9,13 +13,17 @@ body {
     font-family: Helvetica, Arial, sans-serif;
 }
 
+a {
+    color: var(--color-accent);
+}
+
 #dropzone {
     display: flex;
     flex: 1;
-    margin: 1em;
+    margin: 2em;
     align-items: center;
     justify-content: center;
     text-align: center;
-    border: 0.25em red dashed;
+    border: 0.25em var(--color-accent) dashed;
     border-radius: 1em;
 }
