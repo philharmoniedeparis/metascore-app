@@ -18,12 +18,37 @@ a {
 }
 
 #dropzone {
+    position: relative;
     display: flex;
     flex: 1;
     margin: 2em;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
+    gap: 1em;
     border: 0.25em var(--color-accent) dashed;
-    border-radius: 1em;
+}
+
+#dropzone::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-accent);
+    opacity: 0.1;
+    z-index: 0;
+}
+
+#dropzone p {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 0;
+}
+#dropzone p.description {
+    font-size: 1em;
+    font-weight: normal;
+    opacity: 0.5;
 }
