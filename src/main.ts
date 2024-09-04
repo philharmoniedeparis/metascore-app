@@ -7,11 +7,14 @@ import {
   session,
   ipcMain,
 } from 'electron';
-import { join, extname } from 'path';
-import { lstatSync } from 'fs';
+import { parseArgs } from 'node:util';
+import { join, extname } from 'node:path';
+import { lstatSync } from 'node:fs';
 import AdmZip from 'adm-zip';
 import mime from 'mime/lite';
 import { productName, version, copyright, homepage } from '../package.json';
+
+if(require('electron-squirrel-startup')) app.quit();
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -20,18 +23,9 @@ const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://metascore.philharmoni
 
 let zip: AdmZip | null = null;
 
-const loadHTML = (file: string, win?: BrowserWindow | null) => {
-  win = win ?? BrowserWindow.getFocusedWindow();
-
-  if (!win) return;
-
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    win.loadURL(file === 'index.html' ? MAIN_WINDOW_VITE_DEV_SERVER_URL : join(__dirname, file));
-  } else {
-    win.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/${file}`));
-  }
-}
-
+/**
+ * Create a new browser window.
+ */
 const createWindow = () => {
   // Create the browser window.
   const browserWindow = new BrowserWindow({
@@ -56,33 +50,85 @@ const createWindow = () => {
     browserWindow.setAutoHideMenuBar(false);
   });
 
-
-  // and load the index.html of the app.
-  loadHTML('index.html', browserWindow);
-
   return browserWindow;
 };
 
-const openApp = (path: string) => {
+/**
+ * Load a .html file.
+ */
+const loadHTML = async (file: string, browserWindow?: BrowserWindow | null) => {
+  browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
+
+  if (!browserWindow) return;
+
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    return browserWindow.loadURL(file === 'index.html' ? MAIN_WINDOW_VITE_DEV_SERVER_URL : join(__dirname, file));
+  } else {
+    return browserWindow.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/${file}`));
+  }
+};
+
+/**
+ * Process a .metaScore file.
+ */
+const openApp = (path: string, browserWindow?: BrowserWindow | null) => {
+  browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
+
+  if (!lstatSync(path).isFile() || extname(path) !== ".metaScore") {
+    throw new Error("Not a .metaScore file.")
+  }
+
   zip = new AdmZip(path);
-  loadHTML('app.html');
+  return loadHTML('app.html', browserWindow);
+};
+
+/**
+ * Process command line arguments.
+ */
+const processCliArguments = async (browserWindow) => {
+  const { values: valueArgs, positionals: positionalArgs } = parseArgs({
+    args: process.argv.slice(1),
+    options: {
+      fullscreen: { type: 'boolean', short: 'f' },
+    },
+    allowPositionals: true
+  });
+  if (positionalArgs && positionalArgs.length >= 1) {
+    try {
+      await openApp(positionalArgs[0], browserWindow);
+    } catch (e) {
+      //
+    }
+  }
+  if (valueArgs.fullscreen) {
+    browserWindow.setFullScreen(true);
+  }
 }
 
+/**
+ * Show the open file dialog.
+ */
 const showOpenDialog = async () => {
+  const browserWindow = BrowserWindow.getFocusedWindow();
+  if (browserWindow === null) return;
+
   try {
-    const result = await dialog.showOpenDialog({
+    const result = await dialog.showOpenDialog(browserWindow, {
       properties: ['openFile', 'dontAddToRecent'],
       filters: [{ name: 'metaScore Files', extensions: ['metascore'] }]
     });
     if (result.canceled) return;
 
     const filePath = result.filePaths.at(0);
-    if (filePath) openApp(filePath);
+    if (filePath) openApp(filePath, browserWindow);
   } catch (err) {
     console.error(err);
   }
 }
 
+/**
+ * Create the main menu.
+ */
 const createMenu = () => {
   const menu = Menu.buildFromTemplate([
     {
@@ -115,6 +161,9 @@ const createMenu = () => {
   Menu.setApplicationMenu(menu)
 }
 
+/**
+ * Register the .zip schema.
+ */
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'zip',
@@ -126,7 +175,38 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
-app.whenReady().then(() => {
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', async () => {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (BrowserWindow.getAllWindows().length === 0) {
+    // Create a new window.
+    const browserWindow = createWindow();
+    // Load index.html.
+    await loadHTML('index.html', browserWindow);
+  }
+});
+
+/**
+ * Customize the about panel.
+ */
+app.setAboutPanelOptions({
+  applicationName: productName,
+  applicationVersion: `v.${version}`,
+  copyright,
+  website: homepage,
+});
+
+app.whenReady().then(async () => {
   // Redirect external requests to zip://.
   session.defaultSession.webRequest.onBeforeRequest(
     { urls: ['http://*/*', 'https://*/*'] },
@@ -177,42 +257,15 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('browseFile', () => {
-    showOpenDialog();
+    return showOpenDialog();
   });
 
   ipcMain.handle('dropFile', (event, path) => {
-    if (lstatSync(path).isFile() && extname(path) === ".metaScore") {
-      openApp(path);
-      return true;
-    }
-    return false;
+    return openApp(path);
   });
 
   createMenu();
-  createWindow();
-});
-
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
-app.setAboutPanelOptions({
-  applicationName: productName,
-  applicationVersion: `v.${version}`,
-  copyright,
-  website: homepage,
+  const browserWindow = createWindow();
+  await loadHTML('index.html', browserWindow);
+  await processCliArguments(browserWindow);
 });

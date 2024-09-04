@@ -1,6 +1,6 @@
 {
   "name": "metascore-app",
-  "productName": "metaScore - offline",
+  "productName": "metaScore",
   "version": "1.0.0",
   "description": "My Electron application description",
   "homepage": "https://metascore.philharmoniedeparis.fr/",

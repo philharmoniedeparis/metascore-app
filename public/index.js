@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const dropzone = document.getElementById('dropzone');
-  dropzone.addEventListener('click', (e) => {
+  dropzone.addEventListener('click', async (e) => {
     window.electronAPI.browseFile();
   });
   dropzone.addEventListener('dragover', (e) => {
@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const files = event.dataTransfer.files;
 
     for (const file of files) {
-      console.log(file);
       if (window.electronAPI.dropFile(file.path)) break;
     }
   });
