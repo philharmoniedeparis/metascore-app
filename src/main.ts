@@ -19,9 +19,10 @@ if(require('electron-squirrel-startup')) app.quit();
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-const BASE_URL = import.meta.env.VITE_BASE_URL ?? "https://metascore.philharmoniedeparis.fr/";
+const DEFAULT_BASE_URL = "https://metascore.philharmoniedeparis.fr/";
 
 let zip: AdmZip | null = null;
+let base_url = DEFAULT_BASE_URL;
 
 /**
  * Create a new browser window.
@@ -79,13 +80,22 @@ const openApp = (path: string, browserWindow?: BrowserWindow | null) => {
   }
 
   zip = new AdmZip(path);
+  base_url = DEFAULT_BASE_URL;
+
+  try {
+    const data = JSON.parse(zip?.readAsText('data.json'));
+    base_url = data.base_url ?? DEFAULT_BASE_URL
+  } catch (e) {
+    //
+  }
+
   return loadHTML('app.html', browserWindow);
 };
 
 /**
  * Process command line arguments.
  */
-const processCliArguments = async (browserWindow) => {
+const processCliArguments = async (browserWindow: BrowserWindow) => {
   const { values: valueArgs, positionals: positionalArgs } = parseArgs({
     args: process.argv.slice(1),
     options: {
@@ -212,7 +222,7 @@ app.whenReady().then(async () => {
     { urls: ['http://*/*', 'https://*/*'] },
     (details, callback) => {
       const url = details.url;
-      const { host } = new URL(url, BASE_URL);
+      const { host } = new URL(url, base_url);
 
       if (host.startsWith('localhost')) {
         callback({});
@@ -262,6 +272,10 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('dropFile', (event, path) => {
     return openApp(path);
+  });
+
+  ipcMain.handle('getBaseUrl', () => {
+    return base_url;
   });
 
   createMenu();

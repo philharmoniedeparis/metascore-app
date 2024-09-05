@@ -1,13 +1,16 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     // Update the base url.
-    if (window.electronAPI.baseUrl) {
+    try {
+        const base_url = await window.electronAPI.getBaseUrl()
         const head = document.querySelector('head');
         let base = head.querySelector('base');
         if (!base) {
             base = document.createElement('base');
             head.appendChild(base);
         }
-        base.href = window.electronAPI.baseUrl;
+        base.href = base_url;
+    } catch(e) {
+        //
     }
 
     metaScore.Player.create({
