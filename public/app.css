@@ -8,6 +8,10 @@ body {
     font-family: Helvetica, Arial, sans-serif;
 }
 
+body.kiosk-mode * {
+    user-select: none;
+}
+
 #app {
     height: 100%;
 }

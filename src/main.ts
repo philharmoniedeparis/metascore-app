@@ -7,14 +7,12 @@ import {
   session,
   ipcMain,
 } from 'electron';
-import { parseArgs } from 'node:util';
 import { join, extname } from 'node:path';
 import { lstatSync } from 'node:fs';
 import AdmZip from 'adm-zip';
 import mime from 'mime/lite';
+import { program as cli } from 'commander';
 import { productName, version, copyright, homepage } from '../package.json';
-
-if(require('electron-squirrel-startup')) app.quit();
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -23,6 +21,23 @@ const DEFAULT_BASE_URL = "https://metascore.philharmoniedeparis.fr/";
 
 let zip: AdmZip | null = null;
 let base_url = DEFAULT_BASE_URL;
+
+if(require('electron-squirrel-startup')) app.quit();
+
+/**
+ * Process command line arguments.
+ */
+cli
+  .name(productName)
+  .version(version)
+  .argument('<path>', 'path to a .metaScore file')
+  .option('-f, --fullscreen', 'open in fullscreen')
+  .option('-k, --kiosk', 'open in kiosk mode')
+  .parse();
+const cliOptions: { path?: string, fullscreen?: boolean, kiosk?: boolean } = {
+  ...cli.opts(),
+  path: cli.args[0],
+};
 
 /**
  * Create a new browser window.
@@ -93,26 +108,15 @@ const openApp = (path: string, browserWindow?: BrowserWindow | null) => {
 };
 
 /**
- * Process command line arguments.
+ * Set/unset kiosk mode.
+ *
+ * The kiosk mode disables right-click and user-selection.
  */
-const processCliArguments = async (browserWindow: BrowserWindow) => {
-  const { values: valueArgs, positionals: positionalArgs } = parseArgs({
-    args: process.argv.slice(1),
-    options: {
-      fullscreen: { type: 'boolean', short: 'f' },
-    },
-    allowPositionals: true
-  });
-  if (positionalArgs && positionalArgs.length >= 1) {
-    try {
-      await openApp(positionalArgs[0], browserWindow);
-    } catch (e) {
-      //
-    }
-  }
-  if (valueArgs.fullscreen) {
-    browserWindow.setFullScreen(true);
-  }
+let inKioskMode = false;
+const toggleKioskMode = (toggle?: boolean, browserWindow?: BrowserWindow | null) => {
+  inKioskMode = toggle ?? !inKioskMode;
+  browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
+  browserWindow.webContents.send('kiosk-mode', inKioskMode);
 }
 
 /**
@@ -146,7 +150,7 @@ const createMenu = () => {
       submenu: [
         {
           label: 'Open',
-          click: showOpenDialog,
+          click: () => showOpenDialog(),
           accelerator: 'CmdOrCtrl+O'
         },
         { role: 'quit' }
@@ -158,7 +162,12 @@ const createMenu = () => {
         { role: 'reload' },
         { role: 'toggleDevTools' },
         { type: 'separator' },
-        { role: 'togglefullscreen' }
+        { role: 'togglefullscreen' },
+        {
+          label: 'Toggle Kiosk Mode',
+          click: () => toggleKioskMode(),
+          accelerator: 'CmdOrCtrl+K'
+        },
       ]
     },
     {
@@ -280,6 +289,17 @@ app.whenReady().then(async () => {
 
   createMenu();
   const browserWindow = createWindow();
-  await loadHTML('index.html', browserWindow);
-  await processCliArguments(browserWindow);
+
+  const { path, fullscreen, kiosk } = cliOptions;
+  if (path) {
+    try {
+      await openApp(path, browserWindow);
+      if (kiosk) toggleKioskMode(true);
+      if (fullscreen) browserWindow.setFullScreen(true);
+    } catch (e) {
+      await loadHTML('index.html', browserWindow);
+    }
+  } else {
+    await loadHTML('index.html', browserWindow);
+  }
 });

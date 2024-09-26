@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.14",
+    "commander": "^12.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "metascore-library": "https://github.com/philharmoniedeparis/metascore-library/releases/download/v3.5.0/metascore-library-v3.5.0.tar.gz",
     "mime": "^4.0.4"

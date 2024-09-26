@@ -13,6 +13,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         //
     }
 
+    const onKioskContextmenu = (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+    };
+    window.electronAPI.onKioskMode((toggle) => {
+        document.body.classList.toggle('kiosk-mode', toggle);
+        window[toggle ? 'addEventListener' : 'removeEventListener']('contextmenu', onKioskContextmenu, true);
+    });
+
     metaScore.Player.create({
         "el": "#app",
         "url": "zip:///data.json",
