@@ -30,7 +30,7 @@ if(require('electron-squirrel-startup')) app.quit();
 cli
   .name(productName)
   .version(version)
-  .argument('<path>', 'path to a .metaScore file')
+  .argument('[path]', 'path to a .metaScore file')
   .option('-f, --fullscreen', 'open in fullscreen')
   .option('-k, --kiosk', 'open in kiosk mode')
   .parse();
@@ -116,7 +116,7 @@ let inKioskMode = false;
 const toggleKioskMode = (toggle?: boolean, browserWindow?: BrowserWindow | null) => {
   inKioskMode = toggle ?? !inKioskMode;
   browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
-  browserWindow.webContents.send('kiosk-mode', inKioskMode);
+  browserWindow?.webContents.send('kiosk-mode', inKioskMode);
 }
 
 /**
