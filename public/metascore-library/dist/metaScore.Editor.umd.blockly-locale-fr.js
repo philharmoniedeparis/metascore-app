@@ -1,6 +1,6 @@
-((typeof self !== 'undefined' ? self : this)["webpackChunkmetaScore"] = (typeof self !== 'undefined' ? self : this)["webpackChunkmetaScore"] || []).push([[996],{
+((typeof self !== 'undefined' ? self : this)["webpackChunkmetaScore"] = (typeof self !== 'undefined' ? self : this)["webpackChunkmetaScore"] || []).push([[335],{
 
-/***/ 74630:
+/***/ 38751:
 /***/ (function(module, exports) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* eslint-disable */
@@ -408,7 +408,8 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
   Blockly.Msg["VARIABLES_SET_TOOLTIP"] = "Définit cette variable pour qu’elle soit égale à la valeur de l’entrée.";
   Blockly.Msg["VARIABLE_ALREADY_EXISTS"] = "Une variable nommée « %1 » existe déjà.";
   Blockly.Msg["VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE"] = "Une variable nommée « %1 » existe déjà pour un autre type : « %2 ».";
-  Blockly.Msg["WORKSPACE_ARIA_LABEL"] = "Espace de travail de Blocky";
+  Blockly.Msg["VARIABLE_ALREADY_EXISTS_FOR_A_PARAMETER"] = "Une variable nommée '%1' existe déjà comme paramètre dans la procédure '%2'.";
+  Blockly.Msg["WORKSPACE_ARIA_LABEL"] = "Espace de travail de Blockly";
   Blockly.Msg["WORKSPACE_COMMENT_DEFAULT_TEXT"] = "Expliquez quelque chose...";
   Blockly.Msg["CONTROLS_FOREACH_INPUT_DO"] = Blockly.Msg["CONTROLS_REPEAT_INPUT_DO"];
   Blockly.Msg["CONTROLS_FOR_INPUT_DO"] = Blockly.Msg["CONTROLS_REPEAT_INPUT_DO"];
@@ -444,12 +445,12 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ 2608:
+/***/ 84196:
 /***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(74630);
+/* harmony import */ var blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(38751);
 /* harmony import */ var blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0__);
 
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_STARTUP) = "au chargement de l’application";
@@ -465,6 +466,12 @@ __webpack_require__.r(__webpack_exports__);
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_TOGGLE_FULLSCREEN) = "basculer le mode plein écran";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_TOGGLE_FULLSCREEN_TOOLTIP) = "";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_TOGGLE_FULLSCREEN_HELPURL) = "";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_GET_IDLE_TIME) = "durée d'inactivité";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_GET_IDLE_TIME_TOOLTIP) = "Secondes écoulées depuis la dernière interaction de l'utilisateur";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_GET_IDLE_TIME_HELPURL) = "";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_RESET) = "réinitialiser l’application";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_RESET_TOOLTIP) = "";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().APP_RESET_HELPURL) = "";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().COMPONENTS_CLICK) = "au clic sur le composant %1";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().COMPONENTS_CLICK_THEN) = "faire %1";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().COMPONENTS_CLICK_TOOLTIP) = "";
@@ -549,10 +556,13 @@ __webpack_require__.r(__webpack_exports__);
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().MEDIA_STOP) = "arrêter la lecture";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().MEDIA_STOP_TOOLTIP) = "";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().MEDIA_STOP_HELPURL) = "";
-(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN) = "lorsque %1";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN) = " %1 lorsque %2";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_THEN) = "faire %1";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_TOOLTIP) = "";
 (blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_HELPURL) = "";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_ELSE) = "sinon";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_ELSE_TOOLTIP) = "";
+(blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default().REACTIVITY_WHEN_ELSE_HELPURL) = "";
 /* harmony default export */ __webpack_exports__["default"] = ((blockly_msg_fr__WEBPACK_IMPORTED_MODULE_0___default()));
 
 /***/ })
