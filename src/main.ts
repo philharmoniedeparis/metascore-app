@@ -181,6 +181,31 @@ const createMenu = () => {
 }
 
 /**
+ * Replace all relative URLs to absolute URLs in a CSS stylesheet.
+ *
+ * @param css The CSS
+ * @param base_url The base URL
+ * @returns The CSS with the URLs replaces
+ */
+const replaceCssUrls = (css: string, base_url: string) => {
+  return css.replace(/url\((['"]?)([^'")]+)(['"]?)\)/gm, (match, opening, url, closing) => {
+    let absolute = false;
+    try {
+      new URL(url);
+      absolute = true;
+    } catch (e) { /** */ }
+
+    if (!absolute) {
+      try {
+        url = new URL(url, base_url).toString();
+      } catch (e) { /** */ }
+    }
+
+    return `url(${opening}${url}${closing})`;
+  });
+}
+
+/**
  * Register the .zip schema.
  */
 protocol.registerSchemesAsPrivileged([
@@ -244,10 +269,8 @@ app.whenReady().then(async () => {
       encoded = encoded.replace(/\+/g, '-').replace(/\//g, '_');
       encoded = encoded.replace(/=+$/, '');
 
-      const ext = extname(url);
-
       callback({
-        redirectURL: `zip:///${encoded}?ext=${ext}`
+        redirectURL: `zip:///${encoded}?initiator=${url}`
       })
     }
   );
@@ -261,11 +284,19 @@ app.whenReady().then(async () => {
     const headers = new Headers();
 
     if (entry) {
-      const ext = searchParams.get('ext');
-      if (ext) headers.set('content-type', mime.getType(ext));
-      return new Response(entry.getData(), {
-        headers
-      });
+      const initiator = searchParams.get('initiator');
+      const ext = initiator ? extname(initiator) : null;
+      const data = entry.getData();
+
+      if (ext) {
+        headers.set('content-type', mime.getType(ext));
+
+        if (ext === '.css') {
+          const css = replaceCssUrls(data.toString(), initiator);
+          return new Response(css, { headers });
+        }
+      }
+      return new Response(data, { headers });
     } else {
       headers.set('content-type', 'text/html');
       return new Response("Not found", {
