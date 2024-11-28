@@ -8,11 +8,13 @@ import {
   ipcMain,
 } from 'electron';
 import { join, extname } from 'node:path';
-import { lstat, readFile, mkdtemp, rm } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import AdmZip from 'adm-zip';
 import { program as cli } from 'commander';
 import { productName, version, copyright, homepage } from '../package.json';
 import { registerAppProtocol, handleAppProtocol } from './utils/appProtocolHandler';
+import { toggleKioskMode } from './utils/kioskMode';
+import { createAppDirectory, getAppDirectory, clearAppDirectory  } from './utils/appDirectory';
 
 interface AppData {
   base_url?: string
@@ -24,7 +26,6 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 const DEFAULT_BASE_URL = "https://metascore.philharmoniedeparis.fr/";
 
-let appDirectory = null as string|null;
 let appData = null as AppData|null;
 let baseUrl = DEFAULT_BASE_URL;
 
@@ -90,16 +91,6 @@ const loadHTML = async (file: string, browserWindow?: BrowserWindow | null) => {
   }
 };
 
-const clearAppDirectory = async () => {
-  if (appDirectory) {
-    try {
-      await rm(appDirectory, { recursive: true });
-    } catch (e) { /**/ }
-
-    appDirectory = null;
-  }
-}
-
 /**
  * Process a .metaScore file.
  */
@@ -117,12 +108,9 @@ const openApp = async (path: string, browserWindow?: BrowserWindow | null) => {
   baseUrl = DEFAULT_BASE_URL;
 
   try {
-    appDirectory = await mkdtemp(join(app.getPath('temp'), 'metaScore'));
-
-    zip.extractAllTo(appDirectory, true);
-    console.log(appDirectory);
-
-    appData = JSON.parse(await readFile(join(appDirectory, 'data.json'), { encoding: 'utf8' }));
+    const dir = await createAppDirectory();
+    zip.extractAllTo(dir, true);
+    appData = JSON.parse(await readFile(join(dir, 'data.json'), { encoding: 'utf8' }));
     baseUrl = appData?.base_url ?? DEFAULT_BASE_URL
   } catch (e) {
     //
@@ -130,18 +118,6 @@ const openApp = async (path: string, browserWindow?: BrowserWindow | null) => {
 
   return loadHTML('app.html', browserWindow);
 };
-
-/**
- * Set/unset kiosk mode.
- *
- * The kiosk mode disables right-click and user-selection.
- */
-let inKioskMode = false;
-const toggleKioskMode = (toggle?: boolean, browserWindow?: BrowserWindow | null) => {
-  inKioskMode = toggle ?? !inKioskMode;
-  browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
-  browserWindow?.webContents.send('kiosk-mode', inKioskMode);
-}
 
 /**
  * Show the open file dialog.
@@ -273,13 +249,15 @@ app.whenReady().then(async () => {
   );
 
   protocol.handle('app', async (request) => {
-    if (!appDirectory) {
+    const dir = getAppDirectory();
+
+    if (!dir) {
       return new Response("Not found", {
         status: 404,
       });
     }
 
-    return await handleAppProtocol(request, appDirectory);
+    return await handleAppProtocol(request, dir);
   });
 
   ipcMain.handle('browseFile', () => {
