@@ -8,19 +8,25 @@ import {
   ipcMain,
 } from 'electron';
 import { join, extname } from 'node:path';
-import { lstatSync } from 'node:fs';
+import { lstat, readFile, mkdtemp, rm } from 'node:fs/promises';
 import AdmZip from 'adm-zip';
-import mime from 'mime/lite';
 import { program as cli } from 'commander';
 import { productName, version, copyright, homepage } from '../package.json';
+import { registerAppProtocol, handleAppProtocol } from './utils/appProtocolHandler';
+
+interface AppData {
+  base_url?: string
+  offline: Record<string, { name: string, mime: string }>
+}
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 const DEFAULT_BASE_URL = "https://metascore.philharmoniedeparis.fr/";
 
-let zip: AdmZip | null = null;
-let base_url = DEFAULT_BASE_URL;
+let appDirectory = null as string|null;
+let appData = null as AppData|null;
+let baseUrl = DEFAULT_BASE_URL;
 
 if(require('electron-squirrel-startup')) app.quit();
 
@@ -84,22 +90,40 @@ const loadHTML = async (file: string, browserWindow?: BrowserWindow | null) => {
   }
 };
 
+const clearAppDirectory = async () => {
+  if (appDirectory) {
+    try {
+      await rm(appDirectory, { recursive: true });
+    } catch (e) { /**/ }
+
+    appDirectory = null;
+  }
+}
+
 /**
  * Process a .metaScore file.
  */
-const openApp = (path: string, browserWindow?: BrowserWindow | null) => {
+const openApp = async (path: string, browserWindow?: BrowserWindow | null) => {
   browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
 
-  if (!lstatSync(path).isFile() || extname(path) !== ".metaScore") {
+  await clearAppDirectory();
+
+  const stat = await lstat(path);
+  if (!stat.isFile() || extname(path) !== ".metaScore") {
     throw new Error("Not a .metaScore file.")
   }
 
-  zip = new AdmZip(path);
-  base_url = DEFAULT_BASE_URL;
+  const zip = new AdmZip(path);
+  baseUrl = DEFAULT_BASE_URL;
 
   try {
-    const data = JSON.parse(zip?.readAsText('data.json'));
-    base_url = data.base_url ?? DEFAULT_BASE_URL
+    appDirectory = await mkdtemp(join(app.getPath('temp'), 'metaScore'));
+
+    zip.extractAllTo(appDirectory, true);
+    console.log(appDirectory);
+
+    appData = JSON.parse(await readFile(join(appDirectory, 'data.json'), { encoding: 'utf8' }));
+    baseUrl = appData?.base_url ?? DEFAULT_BASE_URL
   } catch (e) {
     //
   }
@@ -134,7 +158,7 @@ const showOpenDialog = async () => {
     if (result.canceled) return;
 
     const filePath = result.filePaths.at(0);
-    if (filePath) openApp(filePath, browserWindow);
+    if (filePath) await openApp(filePath, browserWindow);
   } catch (err) {
     console.error(err);
   }
@@ -181,50 +205,25 @@ const createMenu = () => {
 }
 
 /**
- * Replace all relative URLs to absolute URLs in a CSS stylesheet.
- *
- * @param css The CSS
- * @param base_url The base URL
- * @returns The CSS with the URLs replaces
+ * Register the .app schema.
  */
-const replaceCssUrls = (css: string, base_url: string) => {
-  return css.replace(/url\((['"]?)([^'")]+)(['"]?)\)/gm, (match, opening, url, closing) => {
-    let absolute = false;
-    try {
-      new URL(url);
-      absolute = true;
-    } catch (e) { /** */ }
-
-    if (!absolute) {
-      try {
-        url = new URL(url, base_url).toString();
-      } catch (e) { /** */ }
-    }
-
-    return `url(${opening}${url}${closing})`;
-  });
-}
-
-/**
- * Register the .zip schema.
- */
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'zip',
-    privileges: {
-      secure: true,
-      supportFetchAPI: true,
-      stream: true,
-    }
-  }
-]);
-
+registerAppProtocol();
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+let cleanupBeforeQuit = true;
+app.on('before-quit', async (event) => {
+  if (cleanupBeforeQuit) {
+    cleanupBeforeQuit = false;
+    event.preventDefault();
+    await clearAppDirectory();
     app.quit();
   }
 });
@@ -251,59 +250,36 @@ app.setAboutPanelOptions({
 });
 
 app.whenReady().then(async () => {
-  // Redirect external requests to zip://.
+  // Redirect external requests to app://.
   session.defaultSession.webRequest.onBeforeRequest(
     { urls: ['http://*/*', 'https://*/*'] },
     (details, callback) => {
       const url = details.url;
-      const { host } = new URL(url, base_url);
+      const { host } = new URL(url, baseUrl);
 
-      if (host.startsWith('localhost')) {
-        callback({});
-        return;
+      if (!host.startsWith('localhost')) {
+        const entry = appData?.offline[url];
+        if (entry) {
+          const { name, mime } = entry;
+          callback({
+            redirectURL: `app:///${name}?mime=${mime}&initiator=${url}`
+          });
+          return;
+        }
       }
 
-      let encoded = decodeURI(url);
-      // Base64URL encode.
-      encoded = btoa(encoded);
-      encoded = encoded.replace(/\+/g, '-').replace(/\//g, '_');
-      encoded = encoded.replace(/=+$/, '');
-
-      callback({
-        redirectURL: `zip:///${encoded}?initiator=${url}`
-      })
+      callback({});
     }
   );
 
-  // Handle zip:// requests.
-  protocol.handle('zip', (request) => {
-    const url = request.url;
-    const { pathname, searchParams } = new URL(url);
-    const filepath = pathname.replace(/^\//, '');
-    const entry = zip?.getEntry(filepath);
-    const headers = new Headers();
-
-    if (entry) {
-      const initiator = searchParams.get('initiator');
-      const ext = initiator ? extname(initiator) : null;
-      const data = entry.getData();
-
-      if (ext) {
-        headers.set('content-type', mime.getType(ext));
-
-        if (ext === '.css') {
-          const css = replaceCssUrls(data.toString(), initiator);
-          return new Response(css, { headers });
-        }
-      }
-      return new Response(data, { headers });
-    } else {
-      headers.set('content-type', 'text/html');
+  protocol.handle('app', async (request) => {
+    if (!appDirectory) {
       return new Response("Not found", {
         status: 404,
-        headers,
       });
     }
+
+    return await handleAppProtocol(request, appDirectory);
   });
 
   ipcMain.handle('browseFile', () => {
@@ -315,7 +291,7 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('getBaseUrl', () => {
-    return base_url;
+    return baseUrl;
   });
 
   createMenu();

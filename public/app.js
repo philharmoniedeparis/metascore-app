@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     metaScore.Player.create({
         "el": "#app",
-        "url": "zip:///data.json",
+        "url": "app:///data.json",
         "autoload": true,
         "keyboard": false,
         "api": false,
