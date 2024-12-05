@@ -17,10 +17,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         event.stopPropagation();
         event.preventDefault();
     };
-    window.electronAPI.onKioskMode((toggle) => {
+    const onKioskModeToggle = (toggle) => {
         document.body.classList.toggle('kiosk-mode', toggle);
         window[toggle ? 'addEventListener' : 'removeEventListener']('contextmenu', onKioskContextmenu, true);
-    });
+    }
+    window.electronAPI.onKioskMode(onKioskModeToggle);
+    if (window.electronAPI.getKioskMode()) onKioskModeToggle();
 
     metaScore.Player.create({
         "el": "#app",

@@ -13,7 +13,7 @@ import AdmZip from 'adm-zip';
 import { program as cli } from 'commander';
 import { productName, version, copyright, homepage } from '../package.json';
 import { registerAppProtocol, handleAppProtocol } from './utils/appProtocolHandler';
-import { toggleKioskMode } from './utils/kioskMode';
+import { inKioskMode, toggleKioskMode, onToggle as onKioskModeToggle } from './utils/kioskMode';
 import { createAppDirectory, getAppDirectory, clearAppDirectory  } from './utils/appDirectory';
 
 interface AppData {
@@ -164,9 +164,20 @@ const createMenu = () => {
         { type: 'separator' },
         { role: 'togglefullscreen' },
         {
-          label: 'Toggle Kiosk Mode',
+          id: 'enter-kiosk-mode',
+          label: 'Enter Kiosk Mode',
           click: () => toggleKioskMode(),
-          accelerator: 'CmdOrCtrl+K'
+          visible: !inKioskMode,
+          enabled: !inKioskMode,
+          accelerator: 'CmdOrCtrl+K',
+        },
+        {
+          id: 'exit-kiosk-mode',
+          label: 'Exit Kiosk Mode',
+          click: () => toggleKioskMode(),
+          visible: inKioskMode,
+          enabled: inKioskMode,
+          accelerator: 'CmdOrCtrl+K',
         },
       ]
     },
@@ -178,6 +189,14 @@ const createMenu = () => {
     },
   ])
   Menu.setApplicationMenu(menu)
+
+  onKioskModeToggle(() => {
+    const enterItem = menu.getMenuItemById('enter-kiosk-mode');
+    if (enterItem) enterItem.visible = enterItem.enabled = !inKioskMode;
+    
+    const exitItem = menu.getMenuItemById('exit-kiosk-mode');
+    if (exitItem) exitItem.visible = exitItem.enabled = inKioskMode;
+  })
 }
 
 /**
@@ -270,6 +289,10 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('getBaseUrl', () => {
     return baseUrl;
+  });
+
+  ipcMain.handle('getKioskMode', () => {
+    return inKioskMode;
   });
 
   createMenu();

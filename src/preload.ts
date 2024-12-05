@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getBaseUrl: () => ipcRenderer.invoke('getBaseUrl'),
     browseFile: () => ipcRenderer.invoke('browseFile'),
     dropFile: (path: string) => ipcRenderer.invoke('dropFile', path),
+    getKioskMode: () => ipcRenderer.invoke('getKioskMode'),
     onKioskMode: (callback) => ipcRenderer.on('kiosk-mode', (event, value) => callback(value)),
 });

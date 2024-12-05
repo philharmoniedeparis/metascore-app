@@ -1,6 +1,9 @@
 import { BrowserWindow } from 'electron';
+import EventEmitter from 'node:events';
+
+const emitter = new EventEmitter();
   
-  let inKioskMode = false;
+export let inKioskMode = false;
 
 /**
  * Set/unset kiosk mode.
@@ -11,4 +14,11 @@ export const toggleKioskMode = (toggle?: boolean, browserWindow?: BrowserWindow 
   inKioskMode = toggle ?? !inKioskMode;
   browserWindow = browserWindow ?? BrowserWindow.getFocusedWindow();
   browserWindow?.webContents.send('kiosk-mode', inKioskMode);
+
+  emitter.emit('toggle');
 }
+
+export const onToggle = (listener: () => void) => {
+  emitter.on('toggle', listener)
+}
+
