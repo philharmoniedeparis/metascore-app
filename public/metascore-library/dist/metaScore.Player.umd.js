@@ -54138,7 +54138,7 @@ var defineProperty = __webpack_require__(66319);
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.object.entries.js
 var es_object_entries = __webpack_require__(5506);
 ;// CONCATENATED MODULE: ./package.json
-var package_namespaceObject = {"rE":"3.6.2"};
+var package_namespaceObject = {"rE":"3.6.4"};
 // EXTERNAL MODULE: ./node_modules/@babel/runtime/helpers/esm/callSuper.js
 var callSuper = __webpack_require__(98102);
 // EXTERNAL MODULE: ./node_modules/@babel/runtime/helpers/esm/inherits.js
@@ -75200,7 +75200,7 @@ var AppComponentsModule = /*#__PURE__*/function (_AbstractModule) {
     value: function getBlockActivePage(block) {
       var store = app_components_store();
       var id = block.id;
-      return id in store.blocksActivePage ? store.blocksActivePage[id] : 0;
+      return store.blocksActivePage.has(id) ? store.blocksActivePage.get(id) : 0;
     }
   }, {
     key: "setBlockActivePage",
@@ -77337,7 +77337,7 @@ var Components = /*#__PURE__*/function (_AbstractInterpreter) {
       var _this2 = this;
       var _useModule = (0,module_manager/* useModule */.Su)("app_components"),
         activeScenario = _useModule.activeScenario;
-      this._unwatchActiveScenario = (0,runtime_core_esm_bundler/* watch */.wB)(activeScenario, this._onScenarioChange);
+      this._unwatchActiveScenario = (0,runtime_core_esm_bundler/* watch */.wB)(activeScenario, this._onScenarioChange.bind(this));
       return {
         Components: {
           addEventListener: function addEventListener(type, id, event, callback) {
@@ -78168,6 +78168,7 @@ var IDLE_TIME_UPDATE_DELAY = 1000;
       this.width = width;
       this.height = height;
       this.css = css;
+      this.startIdleTimeTracking();
     },
     setWidth(value) {
       this.width = value;
